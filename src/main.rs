@@ -5,36 +5,45 @@ use std::process::{Command, Stdio};
 use clap::Parser;
 
 use crate::cli::Cli;
+use crate::config::Config;
 
 mod cli;
+mod config;
 
 /// Await a child process and forward a particular error using try-expression
 macro_rules! await_child {
   ($child:expr, $err:expr) => {
     $child
       .wait()
-      .map_err(|_| $err)?
+      .map_err(|e| $err(format!("{}", e)))?
       .exit_ok()
-      .map_err(|_| $err)?;
+      .map_err(|e| $err(format!("{}", e)))?;
   };
 }
 
 #[derive(Debug)]
-enum CliError {
-  EzaFailed = 1,
-  PagerFailed,
+#[repr(u16)]
+pub enum CliError {
+  EzaFailed(String) = 1,
+  PagerFailed(String),
+  Config(String),
 }
 
-type CliResult<T = ()> = Result<T, CliError>;
+pub type CliResult<T = ()> = Result<T, CliError>;
 
 fn main() -> CliResult {
   let cli = Cli::parse();
+  let config = config::load(&cli)?;
+  let eza_args = eza_args(&config, &cli.rest);
 
-  let forward_args = forward_args(&cli);
+  if cli.dry_run {
+    println!("{}", dry_run(&config, &cli, &eza_args));
+    return Ok(());
+  }
 
   let mut eza_proc = Command::new("eza")
-    .args(forward_args)
-    .stdout(if cli.interactive {
+    .args(eza_args)
+    .stdout(if config.interactive {
       // pipe into pager
       Stdio::piped()
     } else {
@@ -42,26 +51,22 @@ fn main() -> CliResult {
       Stdio::inherit()
     })
     .spawn()
-    .map_err(|_| CliError::EzaFailed)?;
+    .map_err(|e| CliError::EzaFailed(format!("{}", e)))?;
 
-  if cli.interactive {
+  if config.interactive {
     // grab and redirect stdout to less
-    let eza_out = eza_proc.stdout.take().ok_or(CliError::EzaFailed)?;
+    let eza_out = eza_proc
+      .stdout
+      .take()
+      .ok_or(CliError::EzaFailed("Failed to get eza output".into()))?;
 
-    let pager_args = vec!["-R"];
-    // TODO: header is only supported in less 600, which is prerelease
-    // if cli.long {
-    //   long listing prints a header, make it stick to top of screen in less
-    //   pager_args.push("--header=1");
-    // }
-
-    let mut pager_proc = Command::new("less")
+    let mut pager_proc = Command::new(config.pager.bin)
       .stdin(eza_out)
-      .args(pager_args)
+      .args(config.pager.args)
       .spawn()
-      .map_err(|_| CliError::PagerFailed)?;
+      .map_err(|e| CliError::PagerFailed(format!("{}", e)))?;
 
-    // wait on less
+    // wait on pager
     await_child!(pager_proc, CliError::PagerFailed);
   }
 
@@ -72,44 +77,59 @@ fn main() -> CliResult {
 }
 
 /// Creates a list of args to forward to eza
-fn forward_args(cli: &Cli) -> Vec<String> {
-  let default_args = vec![
-    "-a",
-    "--git-ignore",
-    "--icons=always",
-    "--color-scale=all",
-    "--color-scale-mode=gradient",
-    // long-list args
-    "--header",
-    "--binary",
-    "--group",
-    "--git",
-    // tree args
-    "--level=5",
-  ];
+fn eza_args(config: &Config, rest: &Vec<String>) -> Vec<String> {
+  let mut args = config.eza.args.clone();
 
-  let mut forward_args: Vec<String> = Vec::new();
-  for arg in default_args {
-    forward_args.push(arg.into());
+  match config.style {
+    config::Style::Grid => args.push("--grid".into()),
+    config::Style::Tree => {
+      args.push("--tree".into());
+      for arg in &config.eza.tree_args {
+        args.push(arg.into());
+      }
+    }
   }
 
-  match cli.style() {
-    cli::Style::Grid => forward_args.push("--grid".into()),
-    cli::Style::Tree => forward_args.push("--tree".into()),
+  if config.long {
+    args.push("-l".into());
+    for arg in &config.eza.long_args {
+      args.push(arg.into());
+    }
   }
 
-  if cli.long {
-    forward_args.push("-l".into());
+  if config.interactive {
+    for arg in &config.eza.interactive_args {
+      args.push(arg.into());
+    }
   }
 
-  if cli.interactive {
-    // color is automatically disabled by eza when stdout isn't a tty
-    forward_args.push("--color=always".into());
+  for arg in rest {
+    args.push(arg.into());
   }
 
-  if let Some(dir) = &cli.dir {
-    forward_args.push(dir.clone());
+  args
+}
+
+/// Produces a shell-like representation of the processes being run
+fn dry_run(config: &Config, cli: &Cli, eza_args: &Vec<String>) -> String {
+  let mut buf = String::new();
+
+  let mut eza_cmd = "eza".to_string();
+  if eza_args.len() != 0 {
+    eza_cmd.push_str(&format!(" {}", eza_args.join(" ")));
+  }
+  if cli.rest.len() != 0 {
+    eza_cmd.push_str(&format!(" {}", cli.rest.join(" ")));
+  }
+  buf.push_str(&eza_cmd);
+
+  if config.interactive {
+    let mut pager_cmd = config.pager.bin.clone();
+    if config.pager.args.len() != 0 {
+      pager_cmd.push_str(&format!(" {}", config.pager.args.join(" ")));
+    }
+    buf.push_str(&format!(" | {}", pager_cmd));
   }
 
-  forward_args
+  buf
 }

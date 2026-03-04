@@ -21,9 +21,9 @@ fmt:
 lint:
   cargo clippy
 
-# install with cargo
+# install the current version of the package to your system
 install:
   cargo install --path .
-  @echo
-  @echo "Uninstall with:"
-  @echo "  cargo uninstall lx"
+
+uninstall:
+  cargo uninstall lx
