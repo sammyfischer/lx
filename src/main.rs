@@ -37,7 +37,7 @@ fn main() -> CliResult {
   let eza_args = eza_args(&config, &cli.rest);
 
   if cli.dry_run {
-    println!("{}", dry_run(&config, &cli, &eza_args));
+    println!("{}", dry_run(&config, &eza_args));
     return Ok(());
   }
 
@@ -110,16 +110,39 @@ fn eza_args(config: &Config, rest: &Vec<String>) -> Vec<String> {
   args
 }
 
-/// Produces a shell-like representation of the processes being run
-fn dry_run(config: &Config, cli: &Cli, eza_args: &Vec<String>) -> String {
+/// Creates a descriptive output representing what the cli would do if it actually ran
+fn dry_run(config: &Config, eza_args: &Vec<String>) -> String {
   let mut buf = String::new();
+
+  buf.push_str(&format!(
+    r"Configured eza args:
+  {}
+",
+    eza_args.join("\n  "),
+  ));
+
+  if config.interactive {
+    buf.push_str(&format!(
+      r"
+[Interactive mode options]
+Pager: {}
+Pager args:
+  {}",
+      config.pager.bin,
+      config.pager.args.join("\n  ")
+    ));
+  }
+
+  buf.push_str(
+    r"
+
+Run yourself:
+",
+  );
 
   let mut eza_cmd = "eza".to_string();
   if eza_args.len() != 0 {
     eza_cmd.push_str(&format!(" {}", eza_args.join(" ")));
-  }
-  if cli.rest.len() != 0 {
-    eza_cmd.push_str(&format!(" {}", cli.rest.join(" ")));
   }
   buf.push_str(&eza_cmd);
 

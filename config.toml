@@ -1,0 +1,33 @@
+style = "grid" # default style to use. "grid" or "tree"
+long = false # enable long listing mode
+interactive = false # enable interactive mode
+
+[eza]
+# args forwarded to eza
+args = [
+  "-a",
+  "--git-ignore",
+  "--icons=always",
+  "--color-scale=all",
+  "--color-scale-mode=gradient",
+]
+
+# args forwarded to eza only in long listing mode
+long_args = [
+  "--header",
+  "--binary",
+  "--group",
+  "--git",
+]
+
+# args forwarded to eza only in tree mode
+tree_args = ["--level=5"]
+
+# args forwarded to eza only in interactive mode
+interactive_args = ["--color=always"]
+
+[pager]
+# the name of the pager binary to use
+bin = "less"
+# args forwarded to the pager
+args = ["-R"]

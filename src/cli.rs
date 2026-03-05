@@ -5,7 +5,7 @@ use crate::config::partial::{PartialConfig, PartialEzaConfig, PartialPagerConfig
 
 #[derive(Debug, Parser)]
 pub struct Cli {
-  /// Displays a shell-like representation of the processes that would be run
+  /// Describes what lx will do with the given command, including config file options
   #[arg(long = "dry-run", visible_alias = "dry")]
   pub dry_run: bool,
 

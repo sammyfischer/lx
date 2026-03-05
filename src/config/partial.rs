@@ -25,15 +25,24 @@ pub struct PartialConfig {
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct PartialEzaConfig {
-  pub args: Vec<String>,
-  pub long_args: Vec<String>,
-  pub tree_args: Vec<String>,
-  pub interactive_args: Vec<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub args: Option<Vec<String>>,
+
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub long_args: Option<Vec<String>>,
+
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub tree_args: Option<Vec<String>>,
+
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub interactive_args: Option<Vec<String>>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct PartialPagerConfig {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub bin: Option<String>,
-  pub args: Vec<String>,
+
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub args: Option<Vec<String>>,
 }
