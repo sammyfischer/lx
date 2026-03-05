@@ -81,20 +81,14 @@ fn eza_args(config: &Config, rest: &Vec<String>) -> Vec<String> {
   let mut args = config.eza.args.clone();
 
   match config.style {
+    config::Style::Unset => (),
     config::Style::Grid => args.push("--grid".into()),
-    config::Style::Tree => {
-      args.push("--tree".into());
-      for arg in &config.eza.tree_args {
-        args.push(arg.into());
-      }
-    }
+    config::Style::Tree => args.push("--tree".into()),
+    config::Style::Oneline => args.push("--oneline".into()),
   }
 
   if config.long {
-    args.push("-l".into());
-    for arg in &config.eza.long_args {
-      args.push(arg.into());
-    }
+    args.push("--long".into());
   }
 
   if config.interactive {
@@ -111,13 +105,12 @@ fn eza_args(config: &Config, rest: &Vec<String>) -> Vec<String> {
 }
 
 /// Creates a descriptive output representing what the cli would do if it actually ran
-fn dry_run(config: &Config, eza_args: &Vec<String>) -> String {
+fn dry_run(config: &Config, eza_args: &[String]) -> String {
   let mut buf = String::new();
 
   buf.push_str(&format!(
     r"Configured eza args:
-  {}
-",
+  {}",
     eza_args.join("\n  "),
   ));
 
@@ -133,22 +126,17 @@ Pager args:
     ));
   }
 
-  buf.push_str(
-    r"
-
-Run yourself:
-",
-  );
+  buf.push_str("\n\nRun yourself:\n");
 
   let mut eza_cmd = "eza".to_string();
-  if eza_args.len() != 0 {
+  if !eza_args.is_empty() {
     eza_cmd.push_str(&format!(" {}", eza_args.join(" ")));
   }
   buf.push_str(&eza_cmd);
 
   if config.interactive {
     let mut pager_cmd = config.pager.bin.clone();
-    if config.pager.args.len() != 0 {
+    if !config.pager.args.is_empty() {
       pager_cmd.push_str(&format!(" {}", config.pager.args.join(" ")));
     }
     buf.push_str(&format!(" | {}", pager_cmd));

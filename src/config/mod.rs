@@ -36,28 +36,23 @@ pub struct Config {
   pub pager: PagerConfig,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, clap::ValueEnum)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, clap::ValueEnum)]
 #[serde(rename_all = "lowercase")]
 /// In eza, grid and tree style are exclusive
 pub enum Style {
+  /// display style wasn't set in lx, pass nothing to eza
+  #[default]
+  Unset,
   Grid,
   Tree,
-}
-
-impl Default for Style {
-  fn default() -> Self {
-    Self::Grid
-  }
+  Oneline,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EzaConfig {
   /// Args that are always forwarded to eza
   pub args: Vec<String>,
-  /// Args that are forwarded in long mode only
-  pub long_args: Vec<String>,
-  /// Args that are forwarded in tree mode only
-  pub tree_args: Vec<String>,
+
   /// Args that are forwarded in interactive mode only
   pub interactive_args: Vec<String>,
 }
@@ -71,9 +66,12 @@ impl Default for EzaConfig {
         "--icons=always",
         "--color-scale=all",
         "--color-scale-mode=gradient",
+        "--header",
+        "--binary",
+        "--group",
+        "--git",
+        "--level=5",
       ],
-      long_args: string_vec!["--header", "--binary", "--group", "--git"],
-      tree_args: string_vec!["--level=5"],
       interactive_args: string_vec!["--color=always"],
     }
   }

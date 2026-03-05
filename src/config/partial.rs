@@ -29,12 +29,6 @@ pub struct PartialEzaConfig {
   pub args: Option<Vec<String>>,
 
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub long_args: Option<Vec<String>>,
-
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub tree_args: Option<Vec<String>>,
-
-  #[serde(skip_serializing_if = "Option::is_none")]
   pub interactive_args: Option<Vec<String>>,
 }
 

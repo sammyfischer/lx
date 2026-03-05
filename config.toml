@@ -1,4 +1,4 @@
-style = "grid" # default style to use. "grid" or "tree"
+style = "grid" # display style, one of: "grid", "tree", or "oneline"
 long = false # enable long listing mode
 interactive = false # enable interactive mode
 
@@ -10,18 +10,12 @@ args = [
   "--icons=always",
   "--color-scale=all",
   "--color-scale-mode=gradient",
-]
-
-# args forwarded to eza only in long listing mode
-long_args = [
   "--header",
   "--binary",
   "--group",
   "--git",
+  "--level=5",
 ]
-
-# args forwarded to eza only in tree mode
-tree_args = ["--level=5"]
 
 # args forwarded to eza only in interactive mode
 interactive_args = ["--color=always"]
