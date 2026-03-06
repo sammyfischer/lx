@@ -8,7 +8,15 @@ My personal wrapper for the `eza` command line utility.
 - more convenient pager support with color
 - user config file in platform-standard location
 
+## Install
+
+Clone this repository anywhere. If you have just, you can do `just install`, otherwise run `cargo install --path .`. This requires that you have cargo.
+
 ## Usage
+
+### Dependencies
+
+Requires eza and a pager to be found in PATH. The default pager is less but can be configured.
 
 ### Command line
 
@@ -18,7 +26,7 @@ There are a only a few command line options:
 
 - `-g` Display in grid mode. Sets `--grid` when calling eza.
 - `-t` Display in tree mode. Sets `--tree` when calling eza.
-- `-1` Display in tree mode. Sets `--oneline` when calling eza.
+- `-1` Display in single line mode. Sets `--oneline` when calling eza.
 - `-l` Enable long-listing. Sets `--long` when calling eza.
 - `-i` Enable interactive mode. This forwards eza output into a pager.
 - `--dry-run` Enable dry-run mode. Displays an output describing how eza and the pager will be run, but does nothing.
