@@ -1,6 +1,7 @@
 //! Defines the config structure. All values are required and have explicit defaults. Use the `load`
 //! function to merge together all partial config sources into a fully defined config.
 
+use std::io::IsTerminal;
 use std::path::PathBuf;
 
 use figment::Figment;
@@ -32,7 +33,7 @@ impl Default for Config {
     Self {
       style: Default::default(),
       long: Default::default(),
-      interactive: true,
+      interactive: std::io::stdout().is_terminal(),
       eza: Default::default(),
       pager: Default::default(),
     }
