@@ -18,22 +18,25 @@ macro_rules! string_vec {
   ($($item:literal),* $(,)?) => (vec![$($item.to_string()),*]);
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
-  #[serde(default)]
   pub style: Style,
-
-  #[serde(default)]
   pub long: bool,
-
-  #[serde(default)]
   pub interactive: bool,
-
-  #[serde(default)]
   pub eza: EzaConfig,
-
-  #[serde(default)]
   pub pager: PagerConfig,
+}
+
+impl Default for Config {
+  fn default() -> Self {
+    Self {
+      style: Default::default(),
+      long: Default::default(),
+      interactive: true,
+      eza: Default::default(),
+      pager: Default::default(),
+    }
+  }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, clap::ValueEnum)]
@@ -87,7 +90,9 @@ impl Default for PagerConfig {
   fn default() -> Self {
     Self {
       bin: "less".into(),
-      args: string_vec!["-R"],
+      // -F = don't use pager if output fits in one screen, just print
+      // -R = print escape sequences as-is (preserves formatting/colors in terminal)
+      args: string_vec!["-FR"],
     }
   }
 }
