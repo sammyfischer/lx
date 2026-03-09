@@ -29,9 +29,16 @@ pub struct Cli {
   #[arg(short, long)]
   pub long: bool,
 
-  /// Interactive mode
-  #[arg(short, long)]
-  pub interactive: bool,
+  /// Enable interactive mode
+  #[arg(short,
+    long,
+    default_value = "true",
+    overrides_with = "no_interactive",
+    num_args = 0..=1,
+    require_equals = true,
+    default_missing_value = "true",
+  )]
+  pub interactive: Option<bool>,
 
   /// Remaining args, which get forwarded to eza
   #[arg(
@@ -58,7 +65,7 @@ impl From<&Cli> for PartialConfig {
     PartialConfig {
       style,
       long: if value.long { Some(true) } else { None },
-      interactive: if value.interactive { Some(true) } else { None },
+      interactive: value.interactive,
       // eza and pager args can't be specified by command line, just use defaults
       eza: PartialEzaConfig::default(),
       pager: PartialPagerConfig::default(),

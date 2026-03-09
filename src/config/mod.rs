@@ -1,7 +1,6 @@
 //! Defines the config structure. All values are required and have explicit defaults. Use the `load`
 //! function to merge together all partial config sources into a fully defined config.
 
-use std::io::IsTerminal;
 use std::path::PathBuf;
 
 use figment::Figment;
@@ -19,7 +18,7 @@ macro_rules! string_vec {
   ($($item:literal),* $(,)?) => (vec![$($item.to_string()),*]);
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Config {
   pub style: Style,
   pub long: bool,
@@ -28,19 +27,7 @@ pub struct Config {
   pub pager: PagerConfig,
 }
 
-impl Default for Config {
-  fn default() -> Self {
-    Self {
-      style: Default::default(),
-      long: Default::default(),
-      interactive: std::io::stdout().is_terminal(),
-      eza: Default::default(),
-      pager: Default::default(),
-    }
-  }
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize, clap::ValueEnum)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, clap::ValueEnum, PartialEq)]
 #[serde(rename_all = "lowercase")]
 /// In eza, grid and tree style are exclusive
 pub enum Style {
