@@ -5,10 +5,12 @@ use std::process::{Command, Stdio};
 use clap::Parser;
 
 use crate::cli::Cli;
-use crate::config::Config;
+use crate::config::{Config, Style};
+use crate::error::CliError;
 
 mod cli;
 mod config;
+mod error;
 
 /// Await a child process and forward a particular error using try-expression
 macro_rules! await_child {
@@ -19,14 +21,6 @@ macro_rules! await_child {
       .exit_ok()
       .map_err(|e| $err(format!("{}", e)))?;
   };
-}
-
-#[derive(Debug)]
-#[repr(u16)]
-pub enum CliError {
-  EzaFailed(String) = 1,
-  PagerFailed(String),
-  Config(String),
 }
 
 pub type CliResult<T = ()> = Result<T, CliError>;
@@ -43,7 +37,7 @@ fn main() -> CliResult {
 
   let mut eza_proc = Command::new("eza")
     .args(eza_args)
-    .stdout(if config.interactive {
+    .stdout(if should_use_pager(&config) {
       // pipe into pager
       Stdio::piped()
     } else {
@@ -53,7 +47,7 @@ fn main() -> CliResult {
     .spawn()
     .map_err(|e| CliError::EzaFailed(format!("{}", e)))?;
 
-  if config.interactive {
+  if should_use_pager(&config) {
     // grab and redirect stdout to less
     let eza_out = eza_proc
       .stdout
@@ -91,7 +85,7 @@ fn eza_args(config: &Config, rest: &Vec<String>) -> Vec<String> {
     args.push("--long".into());
   }
 
-  if config.interactive {
+  if should_use_pager(config) {
     for arg in &config.eza.interactive_args {
       args.push(arg.into());
     }
@@ -114,7 +108,7 @@ fn dry_run(config: &Config, eza_args: &[String]) -> String {
     eza_args.join("\n  "),
   ));
 
-  if config.interactive {
+  if should_use_pager(config) {
     buf.push_str(&format!(
       r"
 [Interactive mode options]
@@ -134,7 +128,7 @@ Pager args:
   }
   buf.push_str(&eza_cmd);
 
-  if config.interactive {
+  if should_use_pager(config) {
     let mut pager_cmd = config.pager.bin.clone();
     if !config.pager.args.is_empty() {
       pager_cmd.push_str(&format!(" {}", config.pager.args.join(" ")));
@@ -143,4 +137,23 @@ Pager args:
   }
 
   buf
+}
+
+fn should_use_pager(config: &Config) -> bool {
+  // user set it to false
+  if !config.interactive {
+    return false;
+  }
+
+  // paging breaks grid style for some reason
+  if config.style == Style::Grid {
+    return false;
+  }
+
+  // this is also grid style
+  if config.style == Style::Unset && !config.long {
+    return false;
+  }
+
+  true
 }
