@@ -47,7 +47,7 @@ impl Default for Config {
 pub enum Style {
   /// display style wasn't set in lx, pass nothing to eza
   #[default]
-  Unset,
+  Auto,
   Grid,
   Tree,
   Oneline,

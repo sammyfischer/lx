@@ -1,12 +1,11 @@
-style = "grid" # display style, one of: "grid", "tree", or "oneline"
+style = "auto" # display style, one of: "auto", "grid", "tree", or "oneline"
 long = false # enable long listing mode
-interactive = false # enable interactive mode
+ignore = true # respect .gitignore
 
 [eza]
 # args forwarded to eza
 args = [
   "-a",
-  "--git-ignore",
   "--icons=always",
   "--color-scale=all",
   "--color-scale-mode=gradient",
@@ -17,11 +16,15 @@ args = [
   "--level=5",
 ]
 
-# args forwarded to eza only in interactive mode
+# args forwarded to eza only when paged
 interactive_args = ["--color=always"]
 
 [pager]
+# when output will be paged
+when = "auto"
+
 # the name of the pager binary to use
 bin = "less"
+
 # args forwarded to the pager
 args = ["-R"]

@@ -1,9 +1,10 @@
 #![feature(exit_status_error)]
 
 use std::io::{IsTerminal, stdout};
+use std::path::Path;
 use std::process::{Command, Stdio};
 
-use anyhow::{Result, anyhow};
+use anyhow::{Context, Result, anyhow};
 use clap::Parser;
 
 use crate::cli::Cli;
@@ -16,7 +17,7 @@ mod config;
 fn main() -> Result<()> {
   let cli = Cli::parse();
   let config = config::load(&cli)?;
-  let eza_args = eza_args(&config, &cli.args);
+  let eza_args = eza_args(&config, cli.path.as_deref(), &cli.args)?;
 
   if cli.debug {
     println!("{}", dry_run(&config, &eza_args));
@@ -61,11 +62,11 @@ fn main() -> Result<()> {
 }
 
 /// Creates a list of args to forward to eza
-fn eza_args(config: &Config, rest: &Vec<String>) -> Vec<String> {
+fn eza_args(config: &Config, path: Option<&Path>, rest: &Vec<String>) -> Result<Vec<String>> {
   let mut args = config.eza.args.clone();
 
   match config.style {
-    config::Style::Unset => (),
+    config::Style::Auto => (),
     config::Style::Grid => args.push("--grid".into()),
     config::Style::Tree => args.push("--tree".into()),
     config::Style::Oneline => args.push("--oneline".into()),
@@ -89,7 +90,16 @@ fn eza_args(config: &Config, rest: &Vec<String>) -> Vec<String> {
     args.push(arg.into());
   }
 
-  args
+  if let Some(path) = path {
+    args.push(
+      path
+        .to_str()
+        .context("Path is not valid utf-8!")?
+        .to_owned(),
+    );
+  }
+
+  Ok(args)
 }
 
 /// Creates a descriptive output representing what the cli would do if it
@@ -139,7 +149,7 @@ fn should_use_pager(config: &Config) -> bool {
 
   // automatic paging
 
-  if config.style == Style::Grid || config.style == Style::Unset {
+  if config.style == Style::Grid || config.style == Style::Auto {
     return false;
   }
 

@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::{ArgGroup, Parser};
 
 use crate::config::Style;
@@ -44,6 +46,9 @@ pub struct Cli {
   #[arg(short, long, default_value = "auto")]
   pub paging: PageWhen,
 
+  /// The path to list
+  pub path: Option<PathBuf>,
+
   /// Remaining args, which get forwarded to eza
   pub args: Vec<String>,
 }
@@ -61,15 +66,15 @@ impl From<&Cli> for PartialConfig {
       None
     };
 
-    let mut pager = PartialPagerConfig::default();
-    pager.when = value.paging;
-
     PartialConfig {
       style,
       long: if value.long { Some(true) } else { None },
       ignore: value.ignore,
       eza: PartialEzaConfig::default(),
-      pager,
+      pager: PartialPagerConfig {
+        when: value.paging,
+        ..Default::default()
+      },
     }
   }
 }
