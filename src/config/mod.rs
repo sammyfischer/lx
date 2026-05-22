@@ -103,7 +103,7 @@ impl Default for PagerConfig {
 fn config_path() -> Result<Option<PathBuf>> {
   let path = dirs::config_dir()
     .context("Failed to find default config directory")?
-    .join("lx")
+    .join(env!("CARGO_PKG_NAME"))
     .join("config.toml");
 
   Ok(if !path.exists() { None } else { Some(path) })

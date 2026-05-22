@@ -26,4 +26,4 @@ install:
   cargo install --path .
 
 uninstall:
-  cargo uninstall lx
+  cargo uninstall ez

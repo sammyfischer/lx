@@ -153,6 +153,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
+name = "ez"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "dirs",
+ "figment",
+ "serde",
+]
+
+[[package]]
 name = "figment"
 version = "0.10.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -217,17 +228,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1744e39d1d6a9948f4f388969627434e31128196de472883b39f148769bfe30a"
 dependencies = [
  "libc",
-]
-
-[[package]]
-name = "lx"
-version = "1.0.0"
-dependencies = [
- "anyhow",
- "clap",
- "dirs",
- "figment",
- "serde",
 ]
 
 [[package]]
