@@ -4,13 +4,13 @@
 
 use std::path::PathBuf;
 
+use anyhow::{Context, Result};
 use figment::Figment;
 use figment::providers::{Format, Serialized, Toml};
 use serde::{Deserialize, Serialize};
 
 use crate::cli::Cli;
 use crate::config::partial::{PageWhen, PartialConfig};
-use crate::{CliError, CliResult};
 
 pub mod partial;
 
@@ -100,26 +100,29 @@ impl Default for PagerConfig {
   }
 }
 
-fn config_path() -> Option<PathBuf> {
-  let dir = directories::ProjectDirs::from("", "", "lx")?;
-  Some(dir.config_dir().join("config.toml"))
+fn config_path() -> Result<Option<PathBuf>> {
+  let path = dirs::config_dir()
+    .context("Failed to find default config directory")?
+    .join("lx")
+    .join("config.toml");
+
+  Ok(if !path.exists() { None } else { Some(path) })
 }
 
 /// Loads config sources and merges them together. Returns a well defined config
 /// struct.
-pub fn load(cli: &Cli) -> CliResult<Config> {
+pub fn load(cli: &Cli) -> Result<Config> {
   // load with defaults (non-partial, every config option must have a default)
   let mut figment = Figment::new().merge(Serialized::defaults(Config::default()));
 
   // merge with config file (partial, unset options should not override values)
-  if let Some(path) = config_path() {
+  if let Some(path) = config_path()? {
     figment = figment.merge(Toml::file(path));
   };
 
   // merge with cli options (partial, unset options should not override values)
   figment = figment.merge(Serialized::defaults(PartialConfig::from(cli)));
 
-  figment
-    .extract()
-    .map_err(|e| CliError::Config(format!("{}", e)))
+  let config = figment.extract()?;
+  Ok(config)
 }

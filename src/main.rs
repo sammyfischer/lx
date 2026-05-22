@@ -3,31 +3,17 @@
 use std::io::{IsTerminal, stdout};
 use std::process::{Command, Stdio};
 
+use anyhow::{Result, anyhow};
 use clap::Parser;
 
 use crate::cli::Cli;
 use crate::config::partial::PageWhen;
 use crate::config::{Config, Style};
-use crate::error::CliError;
 
 mod cli;
 mod config;
-mod error;
 
-/// Await a child process and forward a particular error using try-expression
-macro_rules! await_child {
-  ($child:expr, $err:expr) => {
-    $child
-      .wait()
-      .map_err(|e| $err(format!("{}", e)))?
-      .exit_ok()
-      .map_err(|e| $err(format!("{}", e)))?;
-  };
-}
-
-pub type CliResult<T = ()> = Result<T, CliError>;
-
-fn main() -> CliResult {
+fn main() -> Result<()> {
   let cli = Cli::parse();
   let config = config::load(&cli)?;
   let eza_args = eza_args(&config, &cli.args);
@@ -37,7 +23,7 @@ fn main() -> CliResult {
     return Ok(());
   }
 
-  let mut eza_proc = Command::new("eza")
+  let mut eza = Command::new("eza")
     .args(eza_args)
     .stdout(if should_use_pager(&config) {
       // pipe into pager
@@ -46,28 +32,30 @@ fn main() -> CliResult {
       // print normally
       Stdio::inherit()
     })
-    .spawn()
-    .map_err(|e| CliError::EzaFailed(format!("{}", e)))?;
+    .spawn()?;
 
   if should_use_pager(&config) {
-    // grab and redirect stdout to less
-    let eza_out = eza_proc
+    // grab and redirect stdout to pager
+    let eza_out = eza
       .stdout
       .take()
-      .ok_or(CliError::EzaFailed("Failed to get eza output".into()))?;
+      .ok_or(anyhow!("Failed to get eza output"))?;
 
-    let mut pager_proc = Command::new(config.pager.bin)
+    let mut pager = Command::new(config.pager.bin)
       .stdin(eza_out)
       .args(config.pager.args)
-      .spawn()
-      .map_err(|e| CliError::PagerFailed(format!("{}", e)))?;
+      .spawn()?;
 
     // wait on pager
-    await_child!(pager_proc, CliError::PagerFailed);
+    if let Err(e) = pager.wait()?.exit_ok() {
+      eprintln!("{}", e);
+    };
   }
 
   // wait on eza
-  await_child!(eza_proc, CliError::EzaFailed);
+  if let Err(e) = eza.wait()?.exit_ok() {
+    eprintln!("{}", e);
+  }
 
   Ok(())
 }
@@ -109,18 +97,12 @@ fn eza_args(config: &Config, rest: &Vec<String>) -> Vec<String> {
 fn dry_run(config: &Config, eza_args: &[String]) -> String {
   let mut buf = String::new();
 
-  buf.push_str(&format!(
-    r"Configured eza args:
-  {}",
-    eza_args.join("\n  "),
-  ));
+  buf.push_str(&format!("eza\n  {}", eza_args.join("\n  "),));
 
   if should_use_pager(config) {
     buf.push_str(&format!(
       r"
-[Interactive mode options]
-Pager: {}
-Pager args:
+{}
   {}",
       config.pager.bin,
       config.pager.args.join("\n  ")
