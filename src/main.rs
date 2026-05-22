@@ -1,10 +1,12 @@
 #![feature(exit_status_error)]
 
+use std::io::{IsTerminal, stdout};
 use std::process::{Command, Stdio};
 
 use clap::Parser;
 
 use crate::cli::Cli;
+use crate::config::partial::PageWhen;
 use crate::config::{Config, Style};
 use crate::error::CliError;
 
@@ -28,9 +30,9 @@ pub type CliResult<T = ()> = Result<T, CliError>;
 fn main() -> CliResult {
   let cli = Cli::parse();
   let config = config::load(&cli)?;
-  let eza_args = eza_args(&config, &cli.rest);
+  let eza_args = eza_args(&config, &cli.args);
 
-  if cli.dry_run {
+  if cli.debug {
     println!("{}", dry_run(&config, &eza_args));
     return Ok(());
   }
@@ -85,6 +87,10 @@ fn eza_args(config: &Config, rest: &Vec<String>) -> Vec<String> {
     args.push("--long".into());
   }
 
+  if config.ignore {
+    args.push("--git-ignore".into());
+  }
+
   if should_use_pager(config) {
     for arg in &config.eza.interactive_args {
       args.push(arg.into());
@@ -98,7 +104,8 @@ fn eza_args(config: &Config, rest: &Vec<String>) -> Vec<String> {
   args
 }
 
-/// Creates a descriptive output representing what the cli would do if it actually ran
+/// Creates a descriptive output representing what the cli would do if it
+/// actually ran
 fn dry_run(config: &Config, eza_args: &[String]) -> String {
   let mut buf = String::new();
 
@@ -140,20 +147,19 @@ Pager args:
 }
 
 fn should_use_pager(config: &Config) -> bool {
-  // user set it to false
-  if !config.interactive {
+  if config.pager.when == PageWhen::Always {
+    return true;
+  }
+
+  if config.pager.when == PageWhen::Never {
     return false;
   }
 
-  // paging breaks grid style for some reason
-  if config.style == Style::Grid {
+  // automatic paging
+
+  if config.style == Style::Grid || config.style == Style::Unset {
     return false;
   }
 
-  // this is also grid style
-  if config.style == Style::Unset && !config.long {
-    return false;
-  }
-
-  true
+  stdout().is_terminal()
 }

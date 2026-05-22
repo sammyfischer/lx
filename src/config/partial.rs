@@ -1,5 +1,6 @@
-//! Defines config structs, but with all fields made optional. This is to help when merging structs.
-//! `None` values get ignored and `Some` values override the previously set values.
+//! Defines config structs, but with all fields made optional. This is to help
+//! when merging structs. `None` values get ignored and `Some` values override
+//! the previously set values.
 
 use serde::{Deserialize, Serialize};
 
@@ -14,13 +15,22 @@ pub struct PartialConfig {
   pub long: Option<bool>,
 
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub interactive: Option<bool>,
+  pub ignore: Option<bool>,
 
   #[serde(default)]
   pub eza: PartialEzaConfig,
 
   #[serde(default)]
   pub pager: PartialPagerConfig,
+}
+
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, clap::ValueEnum)]
+#[serde(rename_all = "lowercase")]
+pub enum PageWhen {
+  #[default]
+  Auto,
+  Always,
+  Never,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -34,6 +44,8 @@ pub struct PartialEzaConfig {
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct PartialPagerConfig {
+  pub when: PageWhen,
+
   #[serde(skip_serializing_if = "Option::is_none")]
   pub bin: Option<String>,
 
